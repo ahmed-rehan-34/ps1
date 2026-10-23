@@ -1,11 +1,14 @@
-/* Copyright (c) 2007-2016 MIT 6.005 course staff, all rights reserved.
- * Redistribution of original or derived work requires permission of course staff.
- */
 package twitter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * SocialNetwork provides methods that operate on a social network.
@@ -41,7 +44,25 @@ public class SocialNetwork {
      *         either authors or @-mentions in the list of tweets.
      */
     public static Map<String, Set<String>> guessFollowsGraph(List<Tweet> tweets) {
-        throw new RuntimeException("not implemented");
+        Map<String, Set<String>> followsGraph = new HashMap<>();
+        Pattern pattern = Pattern.compile("(?<![A-Za-z0-9_])@([A-Za-z0-9_]+)");
+
+        for (Tweet tweet : tweets) {
+            String author = tweet.getAuthor().toLowerCase();
+            Matcher matcher = pattern.matcher(tweet.getText());
+
+            while (matcher.find()) {
+                String mentioned = matcher.group(1).toLowerCase();
+                if (!mentioned.equals(author)) {
+                    if (!followsGraph.containsKey(author)) {
+                        followsGraph.put(author, new HashSet<>());
+                    }
+                    followsGraph.get(author).add(mentioned);
+                }
+            }
+        }
+
+        return followsGraph;
     }
 
     /**
@@ -54,7 +75,24 @@ public class SocialNetwork {
      *         descending order of follower count.
      */
     public static List<String> influencers(Map<String, Set<String>> followsGraph) {
-        throw new RuntimeException("not implemented");
+        Map<String, Integer> followerCounts = new HashMap<>();
+
+        for (Map.Entry<String, Set<String>> entry : followsGraph.entrySet()) {
+            for (String followedUser : entry.getValue()) {
+                String user = followedUser.toLowerCase();
+                followerCounts.put(user, followerCounts.getOrDefault(user, 0) + 1);
+            }
+        }
+
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(followerCounts.entrySet());
+        entryList.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+
+        List<String> sortedInfluencers = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : entryList) {
+            sortedInfluencers.add(entry.getKey());
+        }
+
+        return sortedInfluencers;
     }
 
 }
